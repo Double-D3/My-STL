@@ -33,8 +33,8 @@ namespace MySTL
 		iterator end();
 		void insert(iterator Iterator, const T& element);
 		void erase(iterator Iterator);
-		void swap(my_vector<T>& right);
-		my_vector<T>& operator=(const my_vector<T>& right);
+		void swap(my_vector& right);
+		my_vector& operator=(const my_vector& right);
 	};
 
 	template<class T>
@@ -50,28 +50,29 @@ namespace MySTL
 	public:
 		friend my_vector;
 		iterator();
-		iterator(const typename my_vector<T>::iterator& other);
-		iterator(typename my_vector<T>::iterator&& other)noexcept;
+		iterator(const iterator& other);
+		iterator(iterator&& other)noexcept;
 		~iterator();
 		T& operator*();
-		typename my_vector<T>::iterator& operator++();
-		typename my_vector<T>::iterator operator++(int);
-		typename my_vector<T>::iterator& operator--();
-		typename my_vector<T>::iterator operator--(int);
-		typename my_vector<T>::iterator& operator=(const typename my_vector<T>::iterator& other);
-		typename my_vector<T>::iterator operator+(const int shift);
-		typename my_vector<T>::iterator operator-(const int shift);
-		typename my_vector<T>::iterator operator+=(const int shift);
-		typename my_vector<T>::iterator operator-=(const int shift);
-		bool operator!=(const typename my_vector<T>::iterator& other);
-		bool operator<(const typename my_vector<T>::iterator& other);
-		bool operator>(const typename my_vector<T>::iterator& other);
-		bool operator<=(const typename my_vector<T>::iterator& other);
-		bool operator>=(const typename my_vector<T>::iterator& other);
-		bool operator==(const typename my_vector<T>::iterator& other);
+		iterator& operator++();
+		iterator operator++(int);
+		iterator& operator--();
+		iterator operator--(int);
+		iterator& operator=(const iterator& other);
+		iterator operator+(const int shift);
+		iterator operator-(const int shift);
+		iterator operator+=(const int shift);
+		iterator operator-=(const int shift);
+		bool operator!=(const iterator& other);
+		bool operator<(const iterator& other);
+		bool operator>(const iterator& other);
+		bool operator<=(const iterator& other);
+		bool operator>=(const iterator& other);
+		bool operator==(const iterator& other);
 	};
 
 	//////////////////////////iterator/////////////////////////
+
 	template<class T>
 	void my_vector<T>::iterator::access_check()
 	{
@@ -103,37 +104,37 @@ namespace MySTL
 	}
 
 	template<class T>
-	bool my_vector<T>::iterator::operator!=(const typename my_vector<T>::iterator& other)
+	bool my_vector<T>::iterator::operator!=(const iterator& other)
 	{
 		return this->ptr != other.ptr;
 	}
 
 	template<class T>
-	bool my_vector<T>::iterator::operator<(const typename my_vector<T>::iterator& other)
+	bool my_vector<T>::iterator::operator<(const iterator& other)
 	{
 		return this->ptr < other.ptr;
 	}
 
 	template<class T>
-	bool my_vector<T>::iterator::operator>(const typename my_vector<T>::iterator& other)
+	bool my_vector<T>::iterator::operator>(const iterator& other)
 	{
 		return this->ptr > other.ptr;
 	}
 
 	template<class T>
-	bool my_vector<T>::iterator::operator<=(const typename my_vector<T>::iterator& other)
+	bool my_vector<T>::iterator::operator<=(const iterator& other)
 	{
 		return this->ptr <= other.ptr;
 	}
 
 	template<class T>
-	bool my_vector<T>::iterator::operator>=(const typename my_vector<T>::iterator& other)
+	bool my_vector<T>::iterator::operator>=(const iterator& other)
 	{
 		return this->ptr >= other.ptr;
 	}
 
 	template<class T>
-	bool my_vector<T>::iterator::operator==(const typename my_vector<T>::iterator& other)
+	bool my_vector<T>::iterator::operator==(const iterator& other)
 	{
 		return this->ptr == other.ptr;
 	}
@@ -157,7 +158,7 @@ namespace MySTL
 	template<class T>
 	typename my_vector<T>::iterator my_vector<T>::iterator::operator+(const int shift)
 	{
-		typename my_vector<T>::iterator New_iterator = *this;
+		iterator New_iterator = *this;
 		New_iterator.ptr += shift;
 		New_iterator.check_iterator();
 		return New_iterator;
@@ -166,7 +167,7 @@ namespace MySTL
 	template<class T>
 	typename my_vector<T>::iterator my_vector<T>::iterator::operator-(const int shift)
 	{
-		typename my_vector<T>::iterator New_iterator = *this;
+		iterator New_iterator = *this;
 		New_iterator.ptr -= shift;
 		New_iterator.check_iterator();
 		return New_iterator;
@@ -183,7 +184,7 @@ namespace MySTL
 	template<class T>
 	typename my_vector<T>::iterator my_vector<T>::iterator::operator++(int)
 	{
-		typename my_vector<T>::iterator New_iterator = *this;
+		iterator New_iterator = *this;
 		this->ptr++;
 		this->check_iterator();
 		return New_iterator;
@@ -200,14 +201,14 @@ namespace MySTL
 	template<class T>
 	typename my_vector<T>::iterator my_vector<T>::iterator::operator--(int)
 	{
-		typename my_vector<T>::iterator New_iterator = *this;
+		iterator New_iterator = *this;
 		this->ptr--;
 		this->check_iterator();
 		return New_iterator;
 	}
 
 	template<class T>
-	typename my_vector<T>::iterator& my_vector<T>::iterator::operator=(const typename my_vector<T>::iterator& other)
+	typename my_vector<T>::iterator& my_vector<T>::iterator::operator=(const iterator& other)
 	{
 		this->ptr = other.ptr;
 		this->vector_begin = other.vector_begin;
@@ -232,27 +233,29 @@ namespace MySTL
 	}
 
 	template<class T>
-	my_vector<T>::iterator::iterator(const typename my_vector<T>::iterator& other)
+	my_vector<T>::iterator::iterator(const iterator& other)
 	{
 		*this = other;
 	}
 
 	template<class T>
-	my_vector<T>::iterator::iterator(typename my_vector<T>::iterator&& other)noexcept
+	my_vector<T>::iterator::iterator(iterator&& other)noexcept
 	{
 		*this = other;
 	}
+
 	//////////////////////////iterator/////////////////////////
 
 	//////////////////////////my_vector/////////////////////////
+
 	template<class T>
-	void my_vector<T>::insert(typename my_vector<T>::iterator Iterator, const T& element)
+	void my_vector<T>::insert(iterator Iterator, const T& element)
 	{
 		this->Size++;
 		if (this->increase_capacity())
 		{
 			T* New_Array = new T[this->Capacity]();
-			typename my_vector<T>::iterator it = this->begin();
+			iterator it = this->begin();
 			size_t index = 0;
 			for (; it < Iterator; ++it, ++index)
 			{
@@ -270,7 +273,7 @@ namespace MySTL
 		}
 		else
 		{
-			typename my_vector<T>::iterator end_iterator = this->end() - 1;
+			iterator end_iterator = this->end() - 1;
 			for (; end_iterator != Iterator; --end_iterator)
 			{
 				*(end_iterator) = *(end_iterator - 1);
@@ -280,11 +283,11 @@ namespace MySTL
 	}
 
 	template<class T>
-	void my_vector<T>::erase(typename my_vector<T>::iterator Iterator)
+	void my_vector<T>::erase(iterator Iterator)
 	{
 		Iterator.check_erase_iterator();
 		this->Size--;
-		typename my_vector<T>::iterator end_iterator = this->end();
+		iterator end_iterator = this->end();
 		size_t index = 0;
 		for (; Iterator < end_iterator; ++Iterator)
 		{
@@ -305,7 +308,7 @@ namespace MySTL
 	{
 		if (this->array != nullptr)
 			delete[]this->array;
-	
+
 		this->array = new T[right.Capacity]();
 		this->Capacity = right.Capacity;
 		this->Size = right.Size;
@@ -319,7 +322,7 @@ namespace MySTL
 	template<class T>
 	typename my_vector<T>::iterator my_vector<T>::end()
 	{
-		typename my_vector<T>::iterator New_iterator;
+		iterator New_iterator;
 		New_iterator.ptr = New_iterator.vector_end = this->array + this->Size;
 		New_iterator.vector_begin = this->array;
 		return New_iterator;
@@ -328,7 +331,7 @@ namespace MySTL
 	template<class T>
 	typename my_vector<T>::iterator my_vector<T>::begin()
 	{
-		typename my_vector<T>::iterator New_iterator;
+		iterator New_iterator;
 		New_iterator.ptr = this->array;
 		New_iterator.vector_begin = this->array;
 		New_iterator.vector_end = this->array + this->Size;
@@ -441,7 +444,7 @@ namespace MySTL
 	}
 
 	template<class T>
-	my_vector<T>::my_vector(const unsigned int size) :my_vector<T>::my_vector()
+	my_vector<T>::my_vector(const unsigned int size) : my_vector()
 	{
 		if (size > 0)
 		{
@@ -449,14 +452,14 @@ namespace MySTL
 			this->array = new T[size];
 			for (unsigned int i = 0; i < size; i++)
 			{
-				this->array[i] = T();
+				this->array[i] = T(); 
 			}
 		}
 		else this->check(size);
 	}
 
 	template<class T>
-	my_vector<T>::my_vector(const unsigned int size, T element) :my_vector<T>::my_vector()
+	my_vector<T>::my_vector(const unsigned int size, T element) : my_vector()
 	{
 		if (size > 0)
 		{
@@ -471,13 +474,13 @@ namespace MySTL
 	}
 
 	template<class T>
-	my_vector<T>::my_vector(const my_vector& other)
+	my_vector<T>::my_vector(const my_vector<T>& other)
 	{
 		*this = other;
 	}
 
 	template<class T>
-	my_vector<T>::my_vector(my_vector&& other)
+	my_vector<T>::my_vector(my_vector<T>&& other)
 	{
 		this->Capacity = other.Capacity;
 		this->Size = other.Size;
@@ -502,10 +505,11 @@ namespace MySTL
 	}
 	template<class T>
 	double my_vector<T>::CAPACITY_INCREASE_FACTOR = 0.3;
+
 	//////////////////////////my_vector/////////////////////////
 };
 
 int main()
 {
-  return 0;
+	return 0;
 }
