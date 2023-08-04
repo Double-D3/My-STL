@@ -18,7 +18,7 @@ namespace MySTL
 		my_vector(const unsigned int size);
 		my_vector(const unsigned int size, T element);
 		my_vector(const my_vector& other);
-		my_vector(my_vector&& other);
+		my_vector(my_vector&& other)noexcept;
 		~my_vector();
 		T& operator[](const int& i);
 		int size();
@@ -35,6 +35,7 @@ namespace MySTL
 		void erase(iterator Iterator);
 		void swap(my_vector& right);
 		my_vector& operator=(const my_vector& right);
+                my_vector& operator=(my_vector&& right)noexcept;
 	};
 
 	template<class T>
@@ -319,6 +320,16 @@ namespace MySTL
 		return *this;
 	}
 
+        template<class T>
+	my_vector<T>& my_vector<T>::operator=(my_vector<T>&& right) noexcept
+	{
+		this->Capacity = right.Capacity;
+		this->Size = right.Size;
+		this->array = right.array;
+		right.array = nullptr;
+		return *this;
+	}
+
 	template<class T>
 	typename my_vector<T>::iterator my_vector<T>::end()
 	{
@@ -480,7 +491,7 @@ namespace MySTL
 	}
 
 	template<class T>
-	my_vector<T>::my_vector(my_vector<T>&& other)
+	my_vector<T>::my_vector(my_vector<T>&& other)noexcept
 	{
 		this->Capacity = other.Capacity;
 		this->Size = other.Size;
