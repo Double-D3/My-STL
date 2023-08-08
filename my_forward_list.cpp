@@ -1,4 +1,4 @@
-#include <iostream>
+#include <iostream> 
 
 namespace MySTL
 {
@@ -16,19 +16,24 @@ namespace MySTL
 		class iterator;
 		my_forward_list();
 		my_forward_list(unsigned int size, const T& data = T());
+		my_forward_list(unsigned int size, T&& data = T());
 		my_forward_list(const my_forward_list& other);
-		my_forward_list(my_forward_list&& other);
-		inline void push_front(const T& data);
-		void pop_front();
+		my_forward_list(my_forward_list&& other)noexcept;
 		iterator begin() const;
 		iterator befor_begin() const;
 		iterator end() const;
 		void clear();
 		bool empty();
 		T& front();
-		iterator erase_after(iterator _where);
-		iterator erase_after(iterator _first, iterator _last);
+		inline void push_front(const T& data);
+		iterator erase_after(iterator where);
+		void pop_front();
+		iterator erase_after(iterator first, iterator last);
+		iterator insert_after(iterator where, const T& data);
+		iterator emplace_after(iterator where, T&& data);
+		iterator emplace_front(T&& data);
 		my_forward_list& operator=(const my_forward_list& other);
+		my_forward_list& operator=(my_forward_list&& other)noexcept;
 		~my_forward_list();
 	};
 
@@ -42,7 +47,7 @@ namespace MySTL
 		void access_check();
 		void check_iterator();
 		friend my_forward_list;
-		iterator(my_forward_list<T>::list_element* _it_ptr, my_forward_list<T>::list_element* _before_begin, my_forward_list<T>::list_element* _end_of_list);
+		iterator(typename my_forward_list<T>::list_element* _it_ptr, typename my_forward_list<T>::list_element* _before_begin, typename my_forward_list<T>::list_element* _end_of_list);
 	public:
 		iterator();
 		iterator(const iterator& other);
@@ -63,7 +68,9 @@ namespace MySTL
 		T data;
 		list_element* ptr;
 		list_element();
-		list_element(const T& data, list_element* ptr_to_next = nullptr);
+		list_element(const T& data, list_element* ptr_to_next);
+		list_element(T&& data, list_element* ptr_to_next);
+		list_element(list_element* ptr_to_next);
 		~list_element();
 	};
 
@@ -71,14 +78,14 @@ namespace MySTL
 	template<class T>
 	my_forward_list<T>::my_forward_list()
 	{
-		this->ptr_to_end = new my_forward_list<T>::list_element();
-		this->ptr_before_begin = new my_forward_list<T>::list_element(T(), this->ptr_to_end);
+		this->ptr_to_end = new list_element();
+		this->ptr_before_begin = new list_element(T(), this->ptr_to_end);
 		this->ptr_to_front = nullptr;
 		this->size = 0;
 	}
 
 	template<class T>
-	my_forward_list<T>::my_forward_list(unsigned int size, const T& data) :my_forward_list<T>::my_forward_list()
+	my_forward_list<T>::my_forward_list(unsigned int size, const T& data) : my_forward_list()
 	{
 		for (size_t i = 1; i <= size; i++)
 		{
@@ -87,36 +94,41 @@ namespace MySTL
 	}
 
 	template<class T>
-	my_forward_list<T>::my_forward_list(const my_forward_list& other) :my_forward_list<T>::my_forward_list()
+	my_forward_list<T>::my_forward_list(unsigned int size, T&& data) : my_forward_list()
+	{
+		for (size_t i = 1; i <= size; i++)
+		{
+			this->emplace_front(std::move(data));
+		}
+	}
+
+	template<class T>
+	my_forward_list<T>::my_forward_list(const my_forward_list<T>& other) : my_forward_list()
 	{
 		*this = other;
 	}
 
 	template<class T>
-	my_forward_list<T>::my_forward_list(my_forward_list&& other)
+	my_forward_list<T>::my_forward_list(my_forward_list<T>&& other) noexcept
 	{
-		this->ptr_before_begin = other.ptr_before_begin;
-		this->ptr_to_end = other.ptr_to_end;
-		this->ptr_to_front = other.ptr_to_front;
-		this->size = other.size;
-		other.ptr_before_begin = other.ptr_to_end = other.ptr_to_front = nullptr;
+		*this = std::move(other);
 	}
 
 	template<class T>
-	my_forward_list<T>& my_forward_list<T>::operator=(const my_forward_list& other)
+	my_forward_list<T>& my_forward_list<T>::operator=(const my_forward_list<T>& other)
 	{
 		if (this->ptr_to_front != nullptr)
 			this->clear();
 
-		if (other.begin().it_ptr == nullptr)
+		if (other.ptr_to_front == nullptr)
 			return *this;
 
-		typename my_forward_list<T>::iterator iterator_for_this(this->befor_begin());
-		typename my_forward_list<T>::iterator iterator_for_other(other.begin());
+		iterator iterator_for_this(this->befor_begin());
+		iterator iterator_for_other(other.begin());
 
 		for (; iterator_for_other.it_ptr != other.ptr_to_end;)
 		{
-			(*iterator_for_this.it_ptr).ptr = new my_forward_list<T>::list_element(*iterator_for_other, this->ptr_to_end);
+			iterator_for_this.it_ptr->ptr = new list_element(*iterator_for_other, this->ptr_to_end);
 			++iterator_for_other;
 			++iterator_for_this;
 			++this->size;
@@ -127,31 +139,41 @@ namespace MySTL
 	}
 
 	template<class T>
+	my_forward_list<T>& my_forward_list<T>::operator=(my_forward_list<T>&& other)noexcept
+	{
+		if (this->ptr_to_front != nullptr)
+			this->clear();
+
+		if (other.ptr_to_front == nullptr)
+			return *this;
+
+		this->size = other.size;
+		this->ptr_before_begin = other.ptr_before_begin;
+		this->ptr_to_end = other.ptr_to_end;
+		this->ptr_to_front = other.ptr_to_front;
+		other.size = 0;
+		other.ptr_before_begin = other.ptr_to_end = other.ptr_to_front = nullptr;
+		return *this;
+	}
+
+	template<class T>
 	typename my_forward_list<T>::iterator my_forward_list<T>::begin() const
 	{
-		my_forward_list<T>::iterator New_it;
-		New_it.it_ptr = this->ptr_to_front;
-		New_it.before_begin = this->ptr_before_begin;
-		New_it.end_of_list = this->ptr_to_end;
+		iterator New_it(this->ptr_to_front, this->ptr_before_begin, this->ptr_to_end);
 		return New_it;
 	}
 
 	template<class T>
 	typename my_forward_list<T>::iterator my_forward_list<T>::befor_begin() const
 	{
-		my_forward_list<T>::iterator New_it;
-		New_it.it_ptr = this->ptr_before_begin;
-		New_it.before_begin = this->ptr_before_begin;
-		New_it.end_of_list = this->ptr_to_end;
+		iterator New_it(this->ptr_before_begin, this->ptr_before_begin, this->ptr_to_end);
 		return New_it;
 	}
 
 	template<class T>
 	typename my_forward_list<T>::iterator my_forward_list<T>::end() const
 	{
-		my_forward_list<T>::iterator New_it;
-		New_it.it_ptr = New_it.end_of_list = this->ptr_to_end;
-		New_it.before_begin = this->ptr_before_begin;
+		iterator New_it(this->ptr_to_end, this->ptr_before_begin, this->ptr_to_end);
 		return New_it;
 	}
 
@@ -160,7 +182,7 @@ namespace MySTL
 	{
 		if (this->ptr_to_front != nullptr)
 		{
-			my_forward_list<T>::list_element* ptr_for_del = this->ptr_to_front;
+			list_element* ptr_for_del = this->ptr_to_front;
 			for (size_t i = 1; i <= this->size; i++)
 			{
 				this->ptr_to_front = this->ptr_to_front->ptr;
@@ -172,7 +194,8 @@ namespace MySTL
 			}
 		}
 		this->size = 0;
-		this->check_boundary();
+		if (this->ptr_before_begin != nullptr && this->ptr_to_end != nullptr)
+			this->check_boundary();
 	}
 
 	template<class T>
@@ -193,50 +216,88 @@ namespace MySTL
 	}
 
 	template<class T>
-	typename my_forward_list<T>::iterator my_forward_list<T>::erase_after(iterator _where)
+	typename my_forward_list<T>::iterator my_forward_list<T>::erase_after(iterator where)
 	{
-		if (_where.it_ptr == this->ptr_to_end || _where.it_ptr->ptr == this->ptr_to_end)
+		if (where.it_ptr == this->ptr_to_end || where.it_ptr->ptr == this->ptr_to_end)
 		{
 			std::cout << "can't erase out of range element";
 			abort();
 		}
 
-		my_forward_list<T>::list_element* ptr_to_delete = _where.it_ptr->ptr;
-		my_forward_list<T>::iterator _It_after_delete(ptr_to_delete->ptr, _where.before_begin, _where.end_of_list);
+		list_element* ptr_to_delete = where.it_ptr->ptr;
+		where.it_ptr->ptr = ptr_to_delete->ptr;
 
-		_where.it_ptr->ptr = _It_after_delete.it_ptr;
 		if (ptr_to_delete == this->ptr_to_front)
 			this->ptr_to_front = this->ptr_before_begin->ptr;
 
 		delete ptr_to_delete;
 		--this->size;
-
 		this->check_boundary();
-		return _It_after_delete;
+		++where;
+		return where;
 	}
 
 	template<class T>
-	typename my_forward_list<T>::iterator my_forward_list<T>::erase_after(iterator _first, iterator _last)
+	typename my_forward_list<T>::iterator my_forward_list<T>::erase_after(iterator first, iterator last)
 	{
-		if (_first.it_ptr == this->ptr_to_end)
+		if (first.it_ptr == this->ptr_to_end)
 		{
 			std::cout << "can't erase out of range element";
 			abort();
 		}
 
-		for (;;) 
+		for (;;)
 		{
-			if (_first.it_ptr->ptr == _last.it_ptr)
+			if (first.it_ptr->ptr == last.it_ptr)
 			{
 				break;
 			}
-			if (_first.it_ptr == this->ptr_to_end)//условная защита, если элемент _first стоит после _last. Но все элементы списка после _first будут удалены до срабатывания защиты
+			if (first.it_ptr == this->ptr_to_end)//условная защита, если элемент first стоит после last. Но все элементы списка после first будут удалены до срабатывания защиты
 			{
-				std::cout << "Incorrect setting of parameters in erase_after(). \"first\" element comes after \"last\""<<std::endl;
-					abort();
+				std::cout << "Incorrect setting of parameters in erase_after(). \"first\" element comes after \"last\"" << std::endl;
+				abort();
 			}
-			this->erase_after(_first);
+			this->erase_after(first);
 		}
+	}
+
+	template<class T>
+	typename my_forward_list<T>::iterator my_forward_list<T>::insert_after(iterator where, const T& data)
+	{
+		if (where.it_ptr == this->ptr_to_end)
+		{
+			std::cout << "can't add element after end of my_forward_list";
+			abort();
+		}
+		where.it_ptr->ptr = new list_element(data, where.it_ptr->ptr);
+		if (where.it_ptr == this->ptr_before_begin)
+			this->ptr_to_front = this->ptr_before_begin->ptr;
+		++where;
+		++this->size;
+		return where;
+	}
+
+	template<class T>
+	typename my_forward_list<T>::iterator my_forward_list<T>::emplace_after(iterator where, T&& data)
+	{
+		if (where.it_ptr == this->ptr_to_end)
+		{
+			std::cout << "can't emplace element after end of my_forward_list";
+			abort();
+		}
+		where.it_ptr->ptr = new list_element(std::move(data), where.it_ptr->ptr);
+		if (where.it_ptr == this->ptr_before_begin)
+			this->ptr_to_front = this->ptr_before_begin->ptr;
+		++where;
+		++this->size;
+		return where;
+	}
+
+	template<class T>
+	typename my_forward_list<T>::iterator my_forward_list<T>::emplace_front(T&& data)
+	{
+		this->emplace_after(this->befor_begin(), std::move(data));
+		return this->begin();
 	}
 
 	template<class T>
@@ -253,35 +314,29 @@ namespace MySTL
 	template<class T>
 	void my_forward_list<T>::pop_front()
 	{
-		if (this->ptr_to_front != nullptr)
-		{
-			this->size--;
-			my_forward_list<T>::list_element* old_front = this->ptr_to_front;
-			this->ptr_to_front = old_front->ptr;
-			delete old_front;
-		}
-		this->check_boundary();
+		this->erase_after(this->befor_begin());
 	}
 
 	template<class T>
 	inline void my_forward_list<T>::push_front(const T& data)
 	{
-		if (this->size == 0)
-			this->ptr_to_front = new my_forward_list<T>::list_element(data, this->ptr_to_end);
-		else this->ptr_to_front = new my_forward_list<T>::list_element(data, this->ptr_to_front);
-
-		this->size++;
-		this->check_boundary();
+		this->insert_after(this->befor_begin(), data);
 	}
 
 	template<class T>
 	my_forward_list<T>::~my_forward_list()
 	{
 		if (this->ptr_before_begin != nullptr)
+		{
 			delete this->ptr_before_begin;
+			this->ptr_before_begin = nullptr;
+		}
 
 		if (this->ptr_to_end != nullptr)
+		{
 			delete this->ptr_to_end;
+			this->ptr_to_end = nullptr;
+		}
 
 		this->clear();
 	}
@@ -297,7 +352,22 @@ namespace MySTL
 	template<class T>
 	my_forward_list<T>::list_element::list_element(const T& data, list_element* ptr_to_next)
 	{
+
 		this->data = data;
+		this->ptr = ptr_to_next;
+	}
+
+	template<class T>
+	my_forward_list<T>::list_element::list_element(T&& data, list_element* ptr_to_next)
+	{
+		this->data = std::move(data);
+		this->ptr = ptr_to_next;
+	}
+
+	template<class T>
+	my_forward_list<T>::list_element::list_element(list_element* ptr_to_next)
+	{
+		this->data = T();
 		this->ptr = ptr_to_next;
 	}
 
@@ -335,13 +405,13 @@ namespace MySTL
 	}
 
 	template<class T>
-	my_forward_list<T>::iterator::iterator(const typename my_forward_list<T>::iterator& other)
+	my_forward_list<T>::iterator::iterator(const iterator& other)
 	{
 		*this = other;
 	}
 
 	template<class T>
-	my_forward_list<T>::iterator::iterator(my_forward_list<T>::list_element* _it_ptr, my_forward_list<T>::list_element* _before_begin, my_forward_list<T>::list_element* _end_of_list)
+	my_forward_list<T>::iterator::iterator(list_element* _it_ptr, list_element* _before_begin, list_element* _end_of_list)
 	{
 		this->it_ptr = _it_ptr;
 		this->before_begin = _before_begin;
@@ -349,7 +419,7 @@ namespace MySTL
 	}
 
 	template<class T>
-	my_forward_list<T>::iterator::iterator(typename my_forward_list<T>::iterator&& other) noexcept
+	my_forward_list<T>::iterator::iterator(iterator&& other) noexcept
 	{
 		*this = other;
 	}
@@ -361,11 +431,11 @@ namespace MySTL
 	T& my_forward_list<T>::iterator::operator*()
 	{
 		this->access_check();
-		return (*this->it_ptr).data;
+		return this->it_ptr->data;
 	}
 
 	template<class T>
-	typename my_forward_list<T>::iterator& my_forward_list<T>::iterator::operator=(const typename my_forward_list<T>::iterator& other)
+	typename my_forward_list<T>::iterator& my_forward_list<T>::iterator::operator=(const iterator& other)
 	{
 		this->it_ptr = other.it_ptr;
 		this->end_of_list = other.end_of_list;
@@ -374,13 +444,13 @@ namespace MySTL
 	}
 
 	template<class T>
-	bool my_forward_list<T>::iterator::operator==(const typename my_forward_list<T>::iterator& other)
+	bool my_forward_list<T>::iterator::operator==(const iterator& other)
 	{
 		return this->it_ptr == other.it_ptr;
 	}
 
 	template<class T>
-	bool my_forward_list<T>::iterator::operator!=(const typename my_forward_list<T>::iterator& other)
+	bool my_forward_list<T>::iterator::operator!=(const iterator& other)
 	{
 		return this->it_ptr != other.it_ptr;
 	}
@@ -396,7 +466,7 @@ namespace MySTL
 	template<class T>
 	typename my_forward_list<T>::iterator my_forward_list<T>::iterator::operator++(int)
 	{
-		my_forward_list<T>::iterator old_it(*this);
+		iterator old_it(*this);
 		this->it_ptr = this->it_ptr->ptr;
 		this->check_iterator();
 		return old_it;
