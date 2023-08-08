@@ -18,7 +18,7 @@ namespace MySTL
 		my_vector(const unsigned int size);
 		my_vector(const unsigned int size, T element);
 		my_vector(const my_vector& other);
-		my_vector(my_vector&& other)noexcept;
+		my_vector(my_vector&& other)noexcept; 
 		~my_vector();
 		T& operator[](const int& i);
 		int size();
@@ -35,7 +35,7 @@ namespace MySTL
 		void erase(iterator Iterator);
 		void swap(my_vector& right);
 		my_vector& operator=(const my_vector& right);
-                my_vector& operator=(my_vector&& right)noexcept;
+		my_vector& operator=(my_vector&& right)noexcept;
 	};
 
 	template<class T>
@@ -73,7 +73,6 @@ namespace MySTL
 	};
 
 	//////////////////////////iterator/////////////////////////
-
 	template<class T>
 	void my_vector<T>::iterator::access_check()
 	{
@@ -244,11 +243,8 @@ namespace MySTL
 	{
 		*this = other;
 	}
-
 	//////////////////////////iterator/////////////////////////
-
 	//////////////////////////my_vector/////////////////////////
-
 	template<class T>
 	void my_vector<T>::insert(iterator Iterator, const T& element)
 	{
@@ -300,8 +296,8 @@ namespace MySTL
 	void my_vector<T>::swap(my_vector<T>& right)
 	{
 		my_vector<T> new_vector = right;
-		right = *this;
-		*this = new_vector;
+		right = std::move(*this);
+		*this = std::move(new_vector);
 	}
 
 	template<class T>
@@ -320,12 +316,13 @@ namespace MySTL
 		return *this;
 	}
 
-        template<class T>
+	template<class T>
 	my_vector<T>& my_vector<T>::operator=(my_vector<T>&& right) noexcept
 	{
 		this->Capacity = right.Capacity;
 		this->Size = right.Size;
 		this->array = right.array;
+		right.Capacity = right.Size = 0;
 		right.array = nullptr;
 		return *this;
 	}
@@ -419,7 +416,7 @@ namespace MySTL
 	void my_vector<T>::push_back(const T& New_Element)
 	{
 		this->Size++;
-		if (this->increase_capacity())//если пора увеличивать this->Capacity, то перезаписываем данные в новый массив
+		if (this->increase_capacity())//если пора увеличивать this->Capacity, то перезаписываем данные в новую область памяти
 		{
 			T* New_Array = new T[this->Capacity]();
 			for (size_t index = 0; index < Size - 1; index++)
@@ -493,10 +490,7 @@ namespace MySTL
 	template<class T>
 	my_vector<T>::my_vector(my_vector<T>&& other)noexcept
 	{
-		this->Capacity = other.Capacity;
-		this->Size = other.Size;
-		this->array = other.array;
-		other.array = nullptr;
+		*this = std::move(other);
 	}
 
 	template<class T>
@@ -516,7 +510,6 @@ namespace MySTL
 	}
 	template<class T>
 	double my_vector<T>::CAPACITY_INCREASE_FACTOR = 0.3;
-
 	//////////////////////////my_vector/////////////////////////
 };
 
